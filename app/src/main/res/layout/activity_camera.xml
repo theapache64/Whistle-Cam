@@ -11,10 +11,11 @@
         android:id="@+id/svCameraPreview"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="87" />
+        android:layout_weight="100" />
 
     <LinearLayout
         android:layout_width="0dp"
+        android:visibility="gone"
         android:layout_height="match_parent"
         android:layout_weight="13"
         android:orientation="vertical"

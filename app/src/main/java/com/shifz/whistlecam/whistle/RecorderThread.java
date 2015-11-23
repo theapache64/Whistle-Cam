@@ -18,7 +18,7 @@
  * 
  */
 
-package com.shifz.whistlecam.utils;
+package com.shifz.whistlecam.whistle;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;

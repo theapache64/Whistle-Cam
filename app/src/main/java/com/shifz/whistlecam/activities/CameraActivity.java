@@ -1,4 +1,4 @@
-package com.shifz.whistlecam;
+package com.shifz.whistlecam.activities;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -15,9 +15,10 @@ import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.shifz.whistlecam.R;
-import com.shifz.whistlecam.utils.DetectorThread;
-import com.shifz.whistlecam.utils.OnSignalsDetectedListener;
-import com.shifz.whistlecam.utils.RecorderThread;
+import com.shifz.whistlecam.utils.PrefHelper;
+import com.shifz.whistlecam.whistle.DetectorThread;
+import com.shifz.whistlecam.whistle.OnSignalsDetectedListener;
+import com.shifz.whistlecam.whistle.RecorderThread;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -27,6 +28,8 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
 
 
     private static final int TAG_NO_FLASH = 1;
+    private static final String KEY_FLASH_MODE = "flash_mode";
+    private static final String X = CameraActivity.class.getSimpleName();
     private SurfaceView svCameraPreview;
     private Camera mCamera;
 
@@ -34,6 +37,7 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
     private RecorderThread recorderThread;
     private DetectorThread detectorThread;
     private static boolean isPhotoBeingTaken = false;
+    private PrefHelper prefHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +58,8 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
         final SurfaceHolder holder = svCameraPreview.getHolder();
         holder.addCallback(this);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+
+        prefHelper = PrefHelper.getInstance(this);
     }
 
     @Override
@@ -61,9 +67,28 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
         super.onResume();
         if (mCamera == null) {
             try {
-                mCamera = Camera.open();
+
+                final String flashMode = prefHelper.getStringPref(KEY_FLASH_MODE, Camera.Parameters.FLASH_MODE_OFF);
+
+
+                mCamera = Camera.open(1);
                 Camera.Parameters params = mCamera.getParameters();
-                params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+
+                //JUST TO LOG
+                for (final String sflashMode : params.getSupportedFlashModes()) {
+                    Log.d(X, "Supported flash mode :" + sflashMode);
+                }
+                for (final Camera.Size size : params.getSupportedPictureSizes()) {
+                    Log.d(X, String.format("Supported picture size - H:%d W:%d ", size.height, size.width));
+                }
+                for (final Camera.Size size : params.getSupportedPreviewSizes()) {
+                    Log.d(X, String.format("Supported preview size - H:%d W:%d ", size.height, size.width));
+                }
+                //JUST TO LOG
+
+                params.setFlashMode(flashMode);
+                //H:1920 W:2560
+                params.setPreviewSize(480,320);
                 mCamera.setParameters(params);
                 mCamera.setPreviewDisplay(svCameraPreview.getHolder());
                 mCamera.startPreview();
@@ -82,7 +107,7 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
     @Override
     protected void onPause() {
         super.onPause();
-        if (mCamera != null) {
+        /*if (mCamera != null) {
             mCamera.release();
             mCamera = null;
         }
@@ -90,7 +115,7 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
         detectorThread.stopDetection();
         detectorThread = null;
         recorderThread.stopRecording();
-        recorderThread = null;
+        recorderThread = null;*/
 
     }
 
@@ -104,9 +129,6 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
         Toast.makeText(CameraActivity.this, "Surface changed", Toast.LENGTH_SHORT).show();
         if (mCamera != null) {
             try {
-                Camera.Parameters params = mCamera.getParameters();
-                params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
-                mCamera.setParameters(params);
                 mCamera.setPreviewDisplay(holder);
                 mCamera.startPreview();
             } catch (IOException e) {
