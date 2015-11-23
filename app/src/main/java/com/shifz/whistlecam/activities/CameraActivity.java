@@ -1,17 +1,22 @@
 package com.shifz.whistlecam.activities;
 
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.os.Environment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.RadioButton;
 import android.widget.Toast;
 
 import com.shifz.whistlecam.R;
@@ -23,6 +28,7 @@ import com.shifz.whistlecam.whistle.RecorderThread;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 public class CameraActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnClickListener, OnSignalsDetectedListener, Camera.PictureCallback {
 
@@ -30,28 +36,40 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
     private static final int TAG_NO_FLASH = 1;
     private static final String KEY_FLASH_MODE = "flash_mode";
     private static final String X = CameraActivity.class.getSimpleName();
+    private static final String KEY_CAMERA_INDEX = "camera_index";
+    private static final int CAMERA_REAR_INDEX = 0;
     private SurfaceView svCameraPreview;
     private Camera mCamera;
 
-    private ImageButton ibChangeCamera, ibToggleFlash;
+    private ImageButton ibChangeCamera, ibChangeImageSize, ibToggleFlash;
     private RecorderThread recorderThread;
     private DetectorThread detectorThread;
     private static boolean isPhotoBeingTaken = false;
     private PrefHelper prefHelper;
+    private int scrWidth, scrHeight;
+    private AlertDialog alertDialog;
+    private int cameraIndex;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
+        final DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        scrWidth = metrics.widthPixels;
+        scrHeight = metrics.heightPixels;
+
         svCameraPreview = (SurfaceView) findViewById(R.id.svCameraPreview);
         svCameraPreview.setKeepScreenOn(true);
 
         ibChangeCamera = (ImageButton) findViewById(R.id.ibChangeCamera);
         ibToggleFlash = (ImageButton) findViewById(R.id.ibToggleFlash);
+        ibChangeImageSize = (ImageButton) findViewById(R.id.ibChangeImageSize);
 
         ibChangeCamera.setOnClickListener(this);
         ibToggleFlash.setOnClickListener(this);
+        ibChangeImageSize.setOnClickListener(this);
 
         ibToggleFlash.setTag(TAG_NO_FLASH);
 
@@ -68,14 +86,16 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
         if (mCamera == null) {
             try {
 
+                cameraIndex = prefHelper.getIntPref(KEY_CAMERA_INDEX, CAMERA_REAR_INDEX);
                 final String flashMode = prefHelper.getStringPref(KEY_FLASH_MODE, Camera.Parameters.FLASH_MODE_OFF);
 
-
-                mCamera = Camera.open(1);
+                mCamera = Camera.open(cameraIndex);
                 Camera.Parameters params = mCamera.getParameters();
+                params.setFlashMode(flashMode);
+                params.setPreviewSize(scrWidth, scrHeight);
 
                 //JUST TO LOG
-                for (final String sflashMode : params.getSupportedFlashModes()) {
+                /*for (final String sflashMode : params.getSupportedFlashModes()) {
                     Log.d(X, "Supported flash mode :" + sflashMode);
                 }
                 for (final Camera.Size size : params.getSupportedPictureSizes()) {
@@ -83,12 +103,9 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
                 }
                 for (final Camera.Size size : params.getSupportedPreviewSizes()) {
                     Log.d(X, String.format("Supported preview size - H:%d W:%d ", size.height, size.width));
-                }
-                //JUST TO LOG
-
-                params.setFlashMode(flashMode);
+                }*/
+                //JUST TO LOG;
                 //H:1920 W:2560
-                params.setPreviewSize(480,320);
                 mCamera.setParameters(params);
                 mCamera.setPreviewDisplay(svCameraPreview.getHolder());
                 mCamera.startPreview();
@@ -138,8 +155,7 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
     }
 
     public void setCameraDisplayOrientation(int cameraId, android.hardware.Camera camera) {
-        android.hardware.Camera.CameraInfo info =
-                new android.hardware.Camera.CameraInfo();
+        android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
         android.hardware.Camera.getCameraInfo(cameraId, info);
         int rotation = getWindowManager().getDefaultDisplay()
                 .getRotation();
@@ -178,6 +194,9 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.ibToggleFlash:
+                break;
+            case R.id.ibChangeImageSize:
+                showImageSizeDialog();
                 break;
         }
     }
@@ -228,5 +247,51 @@ public class CameraActivity extends AppCompatActivity implements SurfaceHolder.C
         }
 
         isPhotoBeingTaken = false;
+    }
+
+    //Showing dialog to change image size
+    public void showImageSizeDialog() {
+
+        if (alertDialog == null) {
+
+            final View imageSizeDialogLayout = LayoutInflater.from(this).inflate(R.layout.image_size_dialog_layout, null);
+
+            if (mCamera == null) {
+                mCamera = Camera.open(cameraIndex);
+            }
+
+            final Camera.Parameters cameraParams = mCamera.getParameters();
+            final List<Camera.Size> supPictureSizes = cameraParams.getSupportedPictureSizes();
+
+            if (supPictureSizes.size() >= 3) {
+
+                final RadioButton rbImageSizeFine = (RadioButton) imageSizeDialogLayout.findViewById(R.id.rbImageSizeFine);
+                final RadioButton rbImageSizeExtraFine = (RadioButton) imageSizeDialogLayout.findViewById(R.id.rbImageSizeExtraFine);
+                final RadioButton rbImageSizeAwesome = (RadioButton) imageSizeDialogLayout.findViewById(R.id.rbImageSizeAwesome);
+
+                final String sizeFineText = String.format("%s (%d x %d)", getString(R.string.Fine), supPictureSizes.get(0).width, supPictureSizes.get(0).height);
+                final String sizeExtaFineText = String.format("%s (%d x %d)", getString(R.string.Extra_Fine), supPictureSizes.get(1).width, supPictureSizes.get(1).height);
+                final String sizeAwesome = String.format("%s (%d x %d)", getString(R.string.Awesome), supPictureSizes.get(2).width, supPictureSizes.get(2).height);
+
+                rbImageSizeFine.setText(sizeFineText);
+                rbImageSizeExtraFine.setText(sizeExtaFineText);
+                rbImageSizeAwesome.setText(sizeAwesome);
+            }
+
+            alertDialog = new AlertDialog.Builder(this)
+                    .setTitle(R.string.Choose_Image_Size)
+                    .setView(imageSizeDialogLayout)
+                    .setCancelable(false)
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                            //TODO: Save image size and restart cam
+                        }
+                    })
+                    .create();
+        }
+
+        alertDialog.show();
     }
 }

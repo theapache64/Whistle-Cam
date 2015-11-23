@@ -30,6 +30,10 @@ public final class PrefHelper {
     }
 
     public boolean getBooleanPref(String key, boolean defaultValue) {
-        return this.pref.getBoolean(key,defaultValue);
+        return this.pref.getBoolean(key, defaultValue);
+    }
+
+    public int getIntPref(String key, int defValue) {
+        return this.pref.getInt(key, defValue);
     }
 }
