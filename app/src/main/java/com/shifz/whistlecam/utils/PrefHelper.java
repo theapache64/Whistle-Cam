@@ -36,4 +36,8 @@ public final class PrefHelper {
     public int getIntPref(String key, int defValue) {
         return this.pref.getInt(key, defValue);
     }
+
+    public void savePref(String key, int value) {
+        this.pref.edit().putInt(key, value).commit();
+    }
 }

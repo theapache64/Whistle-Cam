@@ -7,4 +7,6 @@
     <string name="Extra_Fine">Extra Fine</string>
     <string name="Awesome">Awesome!</string>
     <string name="Choose_Image_Size">Choose Image Size</string>
+    <string name="Custom_image_size_not_supported">Custom image size not supported</string>
+    <string name="Youve_only_one_cam">You\'ve only one cam</string>
 </resources>

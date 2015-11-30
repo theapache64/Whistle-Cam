@@ -1,29 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rgImageSizes"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingRight="20dp"
-    android:paddingTop="20dp"
     android:paddingLeft="20dp"
-    android:checkedButton="@+id/rbImageSizeExtraFine">
+    android:paddingRight="20dp"
+    android:paddingTop="20dp">
 
     <RadioButton
         android:id="@+id/rbImageSizeFine"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        />
+        android:layout_height="wrap_content" />
 
     <RadioButton
-        android:id="@id/rbImageSizeExtraFine"
+        android:id="@+id/rbImageSizeExtraFine"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        />
+        android:layout_height="wrap_content" />
 
     <RadioButton
         android:id="@+id/rbImageSizeAwesome"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        />
+        android:layout_height="wrap_content" />
 
 
 </RadioGroup>
